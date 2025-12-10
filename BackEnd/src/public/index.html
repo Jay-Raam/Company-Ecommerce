@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BookVerse - GraphQL API Dashboard</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap");
+
+      :root {
+        --bg-dark: #030712;
+        --bg-card: rgba(10, 14, 25, 0.6);
+        --text-light: #e7eef7;
+        --accent: #00c3ff;
+        --accent2: #58ffa8;
+        --border-color: rgba(255, 255, 255, 0.06);
+        --shadow-accent: 0 0 40px rgba(0, 195, 255, 0.2);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: radial-gradient(circle at 20% 20%, #111, #000);
+        color: var(--text-light);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 3rem 1rem;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 950px;
+        background: var(--bg-card);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 2.5rem 3rem;
+        box-shadow: var(--shadow-accent);
+        animation: fadeIn 0.8s ease forwards;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      h1 {
+        font-size: 2.2rem;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+
+      .tagline {
+        color: #aaa;
+        font-size: 0.95rem;
+        margin-top: 0.3rem;
+      }
+
+      .status {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.8rem;
+        text-align: center;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 0 20px rgba(0, 255, 179, 0.1);
+      }
+
+      .pulse {
+        width: 16px;
+        height: 16px;
+        background: var(--accent);
+        border-radius: 50%;
+        margin: 0 auto 10px;
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+
+      .status-text {
+        color: var(--accent);
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.5);
+        }
+      }
+
+      .tasks h2 {
+        color: var(--accent);
+        font-size: 1.3rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+      }
+
+      .tasks h2::after {
+        content: "";
+        display: block;
+        width: 50px;
+        height: 2px;
+        margin-top: 5px;
+        background: linear-gradient(90deg, var(--accent), transparent);
+      }
+
+      .task {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 1.3rem;
+        margin-bottom: 1.4rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 10px rgba(0, 255, 179, 0.05);
+      }
+
+      .task:hover {
+        transform: translateY(-3px);
+        border-color: var(--accent);
+        box-shadow: 0 0 25px rgba(0, 255, 179, 0.25);
+      }
+
+      .task h3 {
+        color: var(--text-light);
+        margin-bottom: 0.6rem;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      code {
+        display: block;
+        background: #0d0d10;
+        border-radius: 6px;
+        padding: 1rem;
+        font-family: monospace;
+        font-size: 0.9rem;
+        color: var(--accent);
+        overflow-x: auto;
+      }
+
+      footer {
+        text-align: center;
+        margin-top: 2.5rem;
+        color: #777;
+        font-size: 0.9rem;
+      }
+
+      footer span {
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 600;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>📚 BookVerse - GraphQL API</h1>
+        <p class="tagline">Node.js • Express • MongoDB • GraphQL • Yoga</p>
+      </header>
+
+      <section class="status">
+        <div class="pulse"></div>
+        <h2>Server Status: <span class="status-text">Active</span></h2>
+        <p>
+          All systems are online and your API is ready to serve knowledge 📖
+        </p>
+      </section>
+
+      <section class="tasks">
+        <h2>📜 Available GraphQL Queries</h2>
+
+        <div class="task">
+          <h3>Task 1: Fetch All Books (Paginated)</h3>
+          <code>
+            query {<br />
+            &nbsp;&nbsp;books(limit: 10, skip: 0) {<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;title authors publisher<br />
+            &nbsp;&nbsp;}<br />
+            }
+          </code>
+        </div>
+
+        <div class="task">
+          <h3>Task 2: Get Book by ID</h3>
+          <code>
+            query {<br />
+            &nbsp;&nbsp;book(id: "BOOK_ID_HERE") {<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;title authors average_rating
+            publication_date<br />
+            &nbsp;&nbsp;}<br />
+            }
+          </code>
+        </div>
+
+        <div class="task">
+          <h3>Task 3: Search Books by Keyword</h3>
+          <code>
+            query {<br />
+            &nbsp;&nbsp;searchBooks(keyword: "Harry Potter") {<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;title authors publisher<br />
+            &nbsp;&nbsp;}<br />
+            }
+          </code>
+        </div>
+
+        <div class="task">
+          <h3>Task 4: Filter Books by Author</h3>
+          <code>
+            query {<br />
+            &nbsp;&nbsp;booksByAuthor(author: "J.K. Rowling") {<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;title publication_date<br />
+            &nbsp;&nbsp;}<br />
+            }
+          </code>
+        </div>
+
+        <div class="task">
+          <h3>Task 5: Books by Year Range</h3>
+          <code>
+            query {<br />
+            &nbsp;&nbsp;booksByYearRange(startYear: 1990, endYear: 2000) {<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;title publication_date<br />
+            &nbsp;&nbsp;}<br />
+            }
+          </code>
+        </div>
+
+        <div class="task">
+          <h3>Task 6: Books by Publisher</h3>
+          <code>
+            query {<br />
+            &nbsp;&nbsp;booksByPublisher(publisher: "Scholastic", limit: 5) {<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;title authors<br />
+            &nbsp;&nbsp;}<br />
+            }
+          </code>
+        </div>
+
+        <div class="task">
+          <h3>Task 7: Top Rated Books</h3>
+          <code>
+            query {<br />
+            &nbsp;&nbsp;topRatedBooks(limit: 10) {<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;title authors average_rating<br />
+            &nbsp;&nbsp;}<br />
+            }
+          </code>
+        </div>
+
+        <h2>✍️ Available Mutations</h2>
+
+        <div class="task">
+          <h3>Task 8: Add New Book</h3>
+          <code>
+            mutation {<br />
+            &nbsp;&nbsp;addBook(book: {<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;title: "New Era of Magic",<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;authors: ["John Wick"],<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;publisher: "Fantasy Works",<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;average_rating: 4.9<br />
+            &nbsp;&nbsp;}) { title }<br />
+            }
+          </code>
+        </div>
+
+        <div class="task">
+          <h3>Task 9: Update Book</h3>
+          <code>
+            mutation {<br />
+            &nbsp;&nbsp;updateBook(id: "BOOK_ID_HERE", book: {<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;average_rating: 4.95<br />
+            &nbsp;&nbsp;}) { title average_rating }<br />
+            }
+          </code>
+        </div>
+
+        <div class="task">
+          <h3>Task 10: Delete Book</h3>
+          <code>
+            mutation {<br />
+            &nbsp;&nbsp;deleteBook(id: "BOOK_ID_HERE")<br />
+            }
+          </code>
+        </div>
+      </section>
+
+      <footer>
+        <p>🧠 Built with ❤️ by <span>Jay</span></p>
+      </footer>
+    </div>
+  </body>
+</html>
