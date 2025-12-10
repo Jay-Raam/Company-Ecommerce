@@ -1,28 +1,34 @@
 import mongoose from "mongoose";
+
 const ProductSchema = new mongoose.Schema(
   {
-    "Product ID": { type: Number, required: true, unique: true },
-    "Product Position": String,
-    Promotion: String,
-    "Product Category": String,
-    Seasonal: String,
-    "Sales Volume": Number,
+    gtin: String,
+    sku: String,
 
-    brand: String,
-    url: String,
-    name: { type: String, required: true },
-    description: String,
-    price: Number,
-    currency: String,
-    terms: String,
-    section: String,
-    season: String,
-    material: String,
-    origin: String,
+    originalWebpageUrl: String,
+    processedWebpageUrl: String,
+    mainImageUrls: String,
+
+    localeCode: String,
+    originalTitle: String,
+    shortDescription: String,
+    longDescription: String,
+
+    stockAvailabilityInformation: String,
+    priceInformation: String,
+    contextualInformation: String,
+
+    merchantProductOfferId: String,
+    merchantId: String,
+
+    normalizedCategoryPath: String,
+    popularityInformation: Object,
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    collection: "ProductMain",
+  }
 );
 
-// Create the model
 export const Product =
-  mongoose.models.Product || mongoose.model("ProductCompany", ProductSchema);
+  mongoose.models.ProductMain || mongoose.model("ProductMain", ProductSchema);

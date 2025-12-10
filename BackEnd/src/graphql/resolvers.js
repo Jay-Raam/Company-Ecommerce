@@ -1,19 +1,33 @@
+// graphql/resolvers/productResolvers.js
+
 import {
   getProducts,
   getProductById,
-  getProductByProductId,
   searchProducts,
   addNewProduct,
   updateProduct,
   deleteProduct,
+  getProductsShop,
+  getShopMeta,
 } from "../controllers/ProductController.js";
 
+import { JSONResolver } from "graphql-scalars"; 
+
 export const productResolvers = {
+  // 👇 Register JSON scalar so GraphQL can return objects safely
+  JSON: JSONResolver,
+
   Query: {
+    // your original queries
     products: (_, args) => getProducts(args.limit, args.skip),
     product: (_, { id }) => getProductById(id),
-    productByProductId: (_, { productId }) => getProductByProductId(productId),
     searchProducts: (_, { keyword }) => searchProducts(keyword),
+
+    shopProducts: (_, { filter, limit, skip }) => {
+      return getProductsShop(limit, skip, filter);
+    },
+
+    shopMeta: () => getShopMeta(),
   },
 
   Mutation: {

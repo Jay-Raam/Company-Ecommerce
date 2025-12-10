@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 export const connectDB = async () => {
   try {
     const databaseUrl = "";
+
     await mongoose.connect(databaseUrl, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
