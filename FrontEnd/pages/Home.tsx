@@ -1,27 +1,74 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ThreeHero } from '../components/ThreeScene';
-import { MOCK_PRODUCTS } from '../types';
 import { useStore } from '../store';
 import { fetchProducts } from '@/api/productApi';
 
 export const Home: React.FC = () => {
   const { addToCart } = useStore();
-  const featuredProducts = MOCK_PRODUCTS.slice(0, 4);
+  const [featuredProducts, setFeaturedProducts] = useState([])
 
   useEffect(() => {
-    fetchProducts(20, 0).then(data => console.log(data));
+    fetchProducts(20, 0).then(data => {
+
+      console.log("Raw Product Data:", data);
+
+      const formatted = data.products.map(p => {
+
+        // Extract image (from your stringified object)
+        let imageUrl = "";
+        try {
+          const imgObj = JSON.parse(p.mainImageUrls.replace(/'/g, '"'));
+          imageUrl = imgObj.defaultSize || "";
+        } catch (err) {
+          console.log("Image parse error", err);
+        }
+
+        // Extract price (from priceInformation JSON string)
+        let price = null;
+        try {
+          const priceObj = JSON.parse(p.priceInformation.replace(/'/g, '"'));
+          price = priceObj.displayPriceAmount.valueInCents / 100;
+        } catch (err) {
+          console.log("Price parse error", err);
+        }
+
+        // Extract brand (from contextualInformation JSON string)
+        let brand = "";
+        try {
+          const brandObj = JSON.parse(p.contextualInformation.replace(/'/g, '"'));
+          brand = brandObj.originalBrandName || "";
+        } catch (err) {
+          console.log("Brand parse error", err);
+        }
+
+        return {
+          id: p._id,
+          name: p.originalTitle,
+          price: price,
+          image: imageUrl,
+          brand: brand,
+          category: p.normalizedCategoryPath,
+          rating: 4.5,
+          isNew: !p.createdAt || Date.now() - new Date(p.createdAt).getTime() < 1000 * 60 * 60 * 24 * 7,
+        };
+      });
+
+      console.log("Formatted Products:", formatted);
+      setFeaturedProducts(formatted);
+    });
   }, []);
+
 
   return (
     <div className="w-full overflow-hidden">
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center bg-slate-50 overflow-hidden pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
-          <motion.div 
+
+          <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
@@ -31,7 +78,7 @@ export const Home: React.FC = () => {
               NEW COLLECTION 2025
             </span>
             <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-slate-900 leading-tight mb-6">
-              Future of <br/>
+              Future of <br />
               <span className="text-indigo-600">Minimalism</span>
             </h1>
             <p className="text-lg text-slate-600 mb-8 max-w-lg leading-relaxed">
@@ -52,7 +99,7 @@ export const Home: React.FC = () => {
             </div>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, delay: 0.2 }}
@@ -61,7 +108,7 @@ export const Home: React.FC = () => {
             <ThreeHero className="w-full h-full" />
           </motion.div>
         </div>
-        
+
         {/* Abstract Background Elements */}
         <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-indigo-50/50 to-transparent -z-10" />
       </section>
@@ -90,8 +137,8 @@ export const Home: React.FC = () => {
                 className="group relative"
               >
                 <div className="aspect-[4/5] bg-gray-100 rounded-2xl overflow-hidden mb-4 relative">
-                  <img 
-                    src={product.image} 
+                  <img
+                    src={product.image}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
@@ -101,7 +148,7 @@ export const Home: React.FC = () => {
                     </span>
                   )}
                   <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <button 
+                  <button
                     onClick={() => addToCart(product)}
                     className="absolute bottom-4 right-4 bg-white text-slate-900 p-3 rounded-full shadow-lg translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hover:bg-indigo-600 hover:text-white"
                   >
@@ -133,9 +180,9 @@ export const Home: React.FC = () => {
               Subscribe to our newsletter for exclusive drops, early access to sales, and design inspiration.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-              <input 
-                type="email" 
-                placeholder="email@example.com" 
+              <input
+                type="email"
+                placeholder="email@example.com"
                 className="flex-1 px-6 py-3 rounded-full border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
               />
               <button className="px-8 py-3 bg-slate-900 text-white rounded-full font-medium hover:bg-indigo-600 transition-colors shadow-lg">

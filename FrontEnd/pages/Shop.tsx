@@ -1,27 +1,92 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Filter, ChevronDown, ShoppingCart } from 'lucide-react';
-import { MOCK_PRODUCTS, CATEGORIES, Product } from '../types';
+import { Product } from '../types';
 import { useStore } from '../store';
+import { fetchShopMeta, fetchShopProducts } from '@/api/productApi';
 
 export const Shop: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [priceRange, setPriceRange] = useState(500);
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [limit] = useState(20);
+  const [skip, setSkip] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  // catogary
+  const [categories, setCategories] = useState<string[]>([]);
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(1000);
+
   const { addToCart } = useStore();
 
+  // 🚀 Load products on mount
+  useEffect(() => {
+    loadMoreProducts();
+  }, []);
+
+
+  useEffect(() => {
+    const loadMeta = async () => {
+      const meta = await fetchShopMeta();
+      setCategories(meta.shopMeta.categories);
+      setMinPrice(meta.shopMeta.minPrice);
+      setMaxPrice(meta.shopMeta.maxPrice);
+      setPriceRange(meta.shopMeta.maxPrice);
+    };
+
+    loadMeta();
+    loadMoreProducts();
+  }, []);
+
+
+
+
+  // 🚀 Pagination loader
+  const loadMoreProducts = async () => {
+    if (loading) return;
+
+    setLoading(true);
+
+    try {
+      const res = await fetchShopProducts(limit, skip);
+
+      const newProducts = res.shopProducts;
+
+      if (!newProducts || newProducts.length === 0) {
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+
+      setProducts(prev => [...prev, ...newProducts]);
+      setSkip(prev => prev + limit);
+    } catch (err) {
+      console.error("Error loading products:", err);
+    }
+
+    setLoading(false);
+  };
+
+  // 🚀 Filtering
   const filteredProducts = useMemo(() => {
-    return MOCK_PRODUCTS.filter(product => {
-      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    return products.filter(product => {
+      const matchesCategory =
+        selectedCategory === "All" || product.category === selectedCategory;
+
       const matchesPrice = product.price <= priceRange;
+
       return matchesCategory && matchesPrice;
     });
-  }, [selectedCategory, priceRange]);
+  }, [products, selectedCategory, priceRange]);
 
   return (
     <div className="min-h-screen bg-white pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-4">Shop Collection</h1>
@@ -29,6 +94,7 @@ export const Shop: React.FC = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-12">
+
           {/* Sidebar Filters */}
           <aside className="w-full lg:w-64 space-y-8">
             <div className="sticky top-24">
@@ -36,16 +102,16 @@ export const Shop: React.FC = () => {
                 <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
                   <Filter className="w-4 h-4" /> Categories
                 </h3>
+
                 <div className="space-y-2">
-                  {CATEGORIES.map(category => (
+                  {categories.map(category => (
                     <button
                       key={category}
                       onClick={() => setSelectedCategory(category)}
-                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                        selectedCategory === category 
-                          ? 'bg-indigo-50 text-indigo-700 font-medium' 
-                          : 'text-slate-600 hover:bg-slate-50'
-                      }`}
+                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedCategory === category
+                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                        : 'text-slate-600 hover:bg-slate-50'
+                        }`}
                     >
                       {category}
                     </button>
@@ -55,13 +121,13 @@ export const Shop: React.FC = () => {
 
               <div>
                 <h3 className="font-semibold text-slate-900 mb-4">Price Range</h3>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="1000" 
+                <input
+                  type="range"
+                  min={minPrice}
+                  max={maxPrice}
                   value={priceRange}
                   onChange={(e) => setPriceRange(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  className="w-full h-2 bg-slate-200 rounded-lg cursor-pointer accent-indigo-600"
                 />
                 <div className="flex justify-between text-xs text-slate-500 mt-2">
                   <span>$0</span>
@@ -75,6 +141,7 @@ export const Shop: React.FC = () => {
           <div className="flex-1">
             <div className="flex justify-between items-center mb-6">
               <span className="text-sm text-slate-500">{filteredProducts.length} products found</span>
+
               <div className="flex items-center gap-2 text-sm text-slate-600">
                 <span>Sort by:</span>
                 <button className="flex items-center gap-1 font-medium text-slate-900">
@@ -83,16 +150,18 @@ export const Shop: React.FC = () => {
               </div>
             </div>
 
+            {/* Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map(product => (
                 <ProductCard key={product.id} product={product} onAdd={() => addToCart(product)} />
               ))}
             </div>
 
+            {/* No products */}
             {filteredProducts.length === 0 && (
               <div className="text-center py-24">
                 <p className="text-slate-500">No products found matching your criteria.</p>
-                <button 
+                <button
                   onClick={() => { setSelectedCategory('All'); setPriceRange(1000); }}
                   className="mt-4 text-indigo-600 hover:underline"
                 >
@@ -100,6 +169,19 @@ export const Shop: React.FC = () => {
                 </button>
               </div>
             )}
+
+            {/* ⭐ View More Button */}
+            {hasMore && (
+              <div className="text-center mt-10">
+                <button
+                  onClick={loadMoreProducts}
+                  className="px-6 py-3 bg-slate-900 text-white rounded-lg text-sm hover:bg-indigo-600 transition-all"
+                >
+                  {loading ? "Loading..." : "View More"}
+                </button>
+              </div>
+            )}
+
           </div>
         </div>
       </div>
@@ -107,6 +189,7 @@ export const Shop: React.FC = () => {
   );
 };
 
+/* PRODUCT CARD COMPONENT */
 const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ product, onAdd }) => (
   <motion.div
     layout
@@ -116,12 +199,13 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
     className="group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300"
   >
     <Link to={`/product/${product.id}`} className="block relative aspect-square overflow-hidden bg-gray-50">
-      <img 
-        src={product.image} 
+      <img
+        src={product.image}
         alt={product.name}
         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
       />
     </Link>
+
     <div className="p-4">
       <div className="flex justify-between items-start mb-2">
         <div>
@@ -130,9 +214,11 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
           </h3>
           <p className="text-sm text-slate-500">{product.category}</p>
         </div>
+
         <span className="font-medium text-slate-900">${product.price}</span>
       </div>
-      <button 
+
+      <button
         onClick={(e) => {
           e.preventDefault();
           onAdd();

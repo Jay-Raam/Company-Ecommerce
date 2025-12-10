@@ -26,16 +26,60 @@ export const fetchProducts = async (limit = 20, skip = 0) => {
     query ($limit: Int, $skip: Int) {
       products(limit: $limit, skip: $skip) {
         _id
-        productId
-        name
-        brand
-        price
-        url
+        gtin
+        sku
+        originalWebpageUrl
+        processedWebpageUrl
+        mainImageUrls
+        localeCode
+        originalTitle
+        shortDescription
+        longDescription
+        stockAvailabilityInformation
+        priceInformation
+        contextualInformation
+        merchantProductOfferId
+        merchantId
+        normalizedCategoryPath
+        popularityInformation
+        createdAt
+        updatedAt
       }
     }
   `;
 
   return request(query, { limit, skip });
+};
+
+export const fetchShopProducts = async (limit = 20, skip = 0) => {
+  const query = `
+    query ($limit: Int, $skip: Int) {
+      shopProducts(limit: $limit, skip: $skip) {
+        id
+        name
+        price
+        image
+        brand
+        category
+      }
+    }
+  `;
+
+  return request(query, { limit, skip });
+};
+
+export const fetchShopMeta = async () => {
+  const query = `
+    query {
+      shopMeta {
+        categories
+        minPrice
+        maxPrice
+      }
+    }
+  `;
+
+  return request(query);
 };
 
 // ========================
