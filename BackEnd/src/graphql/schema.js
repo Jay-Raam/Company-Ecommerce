@@ -45,26 +45,29 @@ export const productTypeDefs = /* GraphQL */ `
   type ShopProduct {
     id: ID!
     name: String!
+    bestseller: Boolean
+    rate: String
     price: Float
     image: String
     brand: String
     category: String
     size: String
+    tax : Float
 
     gtin: String
     sku: String
 
     originalWebpageUrl: String
     processedWebpageUrl: String
-    mainImageUrls: String
+    mainImageUrls: JSON
 
     localeCode: String
     shortDescription: String
     longDescription: String
 
     stockAvailabilityInformation: String
-    priceInformation: String
-    contextualInformation: String
+    priceInformation: JSON
+    contextualInformation: JSON
 
     merchantProductOfferId: String
     merchantId: String
@@ -79,11 +82,20 @@ export const productTypeDefs = /* GraphQL */ `
   }
 
   type Query {
-    products(limit: Int = 20, skip: Int = 0): [Product]
-    product(id: ID!): Product
-    searchProducts(keyword: String!): [Product]
-    shopProducts(limit: Int = 20, skip: Int = 0): [ShopProduct]
-    shopMeta: ShopMeta  
+    products(limit: Int = 20, skip: Int = 0): [ShopProduct]
+    product(id: ID!): ShopProduct
+    searchProducts(keyword: String!): [ShopProduct]
+
+    shopProducts(limit: Int = 20, skip: Int = 0, filter: JSON): [ShopProduct]
+
+    BrandProductsShop(
+      brand: String!
+      limit: Int = 20
+      skip: Int = 0
+      filter: JSON
+    ): [ShopProduct]
+
+    shopMeta: ShopMeta
   }
 
   type Mutation {

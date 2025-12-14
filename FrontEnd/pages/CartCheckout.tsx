@@ -1,205 +1,301 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Minus, Plus, Trash2, ArrowRight, CreditCard } from 'lucide-react';
-import { useStore } from '../store';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { CreditCard } from "lucide-react";
+import { useStore } from "../store";
 
-export const CartSidebar: React.FC = () => {
-  const { cart, isCartOpen, toggleCart, updateQuantity, removeFromCart } = useStore();
-  const navigate = useNavigate();
-
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-
-  return (
-    <AnimatePresence>
-      {isCartOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => toggleCart(false)}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60]"
-          />
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[70] shadow-2xl flex flex-col"
-          >
-            <div className="p-6 flex justify-between items-center border-b border-gray-100">
-              <h2 className="text-xl font-bold text-slate-900">Your Cart ({cart.length})</h2>
-              <button onClick={() => toggleCart(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {cart.length === 0 ? (
-                <div className="text-center text-slate-500 mt-20">
-                  <p>Your cart is empty.</p>
-                  <button onClick={() => toggleCart(false)} className="mt-4 text-indigo-600 font-medium">Continue Shopping</button>
-                </div>
-              ) : (
-                cart.map(item => (
-                  <div key={item.id} className="flex gap-4">
-                    <div className="w-20 h-20 bg-slate-50 rounded-lg overflow-hidden flex-shrink-0">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-medium text-slate-900 line-clamp-1">{item.name}</h3>
-                        <button onClick={() => removeFromCart(item.id)} className="text-slate-400 hover:text-red-500">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <p className="text-sm text-slate-500 mb-2">{item.category}</p>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center border border-slate-200 rounded-full px-2 py-1 gap-2">
-                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="text-slate-500 hover:text-slate-900"><Minus className="w-3 h-3" /></button>
-                          <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="text-slate-500 hover:text-slate-900"><Plus className="w-3 h-3" /></button>
-                        </div>
-                        <span className="font-medium text-slate-900">${item.price * item.quantity}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {cart.length > 0 && (
-              <div className="p-6 border-t border-gray-100 bg-slate-50">
-                <div className="flex justify-between mb-4 text-lg font-bold text-slate-900">
-                  <span>Subtotal</span>
-                  <span>${subtotal}</span>
-                </div>
-                <p className="text-xs text-slate-500 mb-4 text-center">Shipping & taxes calculated at checkout.</p>
-                <button 
-                  onClick={() => { toggleCart(false); navigate('/checkout'); }}
-                  className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-indigo-600 transition-colors shadow-lg flex items-center justify-center gap-2"
-                >
-                  Checkout <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-};
+// Re-define if not exported
+const formatINR = (amount: number) =>
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
 
 export const Checkout: React.FC = () => {
   const { cart, clearCart } = useStore();
   const navigate = useNavigate();
+
   const [loading, setLoading] = useState(false);
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shipping = 20;
-  const total = subtotal + shipping;
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    address: "",
+    city: "",
+    state: "Tamil Nadu",
+    pincode: "",
+  });
+
+  if (cart.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center pt-24 pb-12">
+        <div className="text-center">
+          <p className="text-slate-500">Your cart is empty</p>
+          <button
+            onClick={() => navigate("/")}
+            className="mt-4 text-indigo-600 font-medium hover:underline"
+          >
+            ← Continue Shopping
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  console.log("Checkout Cart:", cart);
+
+  // ====== TAX & TOTAL LOGIC (PER ITEM, CORRECT) ======
+  const shipping = 100;
+  const isTamilNadu = formData.state === "Tamil Nadu";
+
+  let subtotal = 0;
+  let cgst = 0;
+  let sgst = 0;
+  let igst = 0;
+
+  cart.forEach((item) => {
+    const itemTotal = item.price * item.quantity;
+    subtotal += itemTotal;
+
+    const taxRate = item.tax || 0; // e.g., 5, 12, 18
+    const taxAmount = (itemTotal * taxRate) / 100;
+
+    if (isTamilNadu) {
+      cgst += taxAmount / 2;
+      sgst += taxAmount / 2;
+    } else {
+      igst += taxAmount;
+    }
+  });
+
+  const taxTotal = cgst + sgst + igst;
+  const total = subtotal + taxTotal + shipping;
+
+  // ====== HANDLE FORM & PAYMENT ======
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handlePayment = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Mock API call
+
+    // Simulate API call
     setTimeout(() => {
       setLoading(false);
       clearCart();
-      alert("Order placed successfully! (Mock)");
-      navigate('/');
-    }, 2000);
+      alert("🎉 Order placed successfully! (Mock)");
+      navigate("/");
+    }, 1800);
   };
 
-  if (cart.length === 0) return <div className="pt-32 text-center">Your cart is empty</div>;
-
+  // ====== RENDER ======
   return (
-    <div className="min-h-screen bg-slate-50 pt-24 pb-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 pt-24 pb-12 px-4">
+      <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-slate-900 mb-8">Checkout</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          
-          {/* Form */}
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-              <h2 className="text-xl font-bold mb-4">Shipping Information</h2>
-              <form id="checkout-form" onSubmit={handlePayment} className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
-                  <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
-                </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
-                  <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                  <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
-                </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
-                  <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
-                </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">ZIP Code</label>
-                  <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
-                </div>
-              </form>
-            </div>
 
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-              <h2 className="text-xl font-bold mb-4">Payment Method (Mock)</h2>
-              <div className="p-4 border border-indigo-100 bg-indigo-50 rounded-lg flex items-center gap-3 mb-4">
-                <CreditCard className="text-indigo-600" />
-                <span className="text-indigo-900 font-medium">Credit Card (Stripe/Razorpay Integration)</span>
+        {/* Main layout: Flex instead of Grid */}
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+          {/* ===== SHIPPING FORM ===== */}
+          <div className="flex-1 max-w-2xl">
+            <form
+              id="checkout-form"
+              onSubmit={handlePayment}
+              className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6"
+            >
+              <div>
+                <h2 className="text-xl font-semibold text-slate-800">Shipping Details</h2>
+                <p className="text-sm text-slate-500 mt-1">Enter your delivery address</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <input placeholder="Card Number" className="col-span-2 px-4 py-2 rounded-lg border border-slate-200" />
-                <input placeholder="MM/YY" className="px-4 py-2 rounded-lg border border-slate-200" />
-                <input placeholder="CVC" className="px-4 py-2 rounded-lg border border-slate-200" />
+
+              {/* Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label htmlFor="firstName" className="block text-xs font-medium text-slate-600 mb-1">
+                    First Name
+                  </label>
+                  <input
+                    id="firstName"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="John"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="lastName" className="block text-xs font-medium text-slate-600 mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    id="lastName"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Doe"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  />
+                </div>
               </div>
-            </div>
+
+              {/* Address */}
+              <div>
+                <label htmlFor="address" className="block text-xs font-medium text-slate-600 mb-1">
+                  Address
+                </label>
+                <input
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Street, Apartment, House No."
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+
+              {/* City + State */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label htmlFor="city" className="block text-xs font-medium text-slate-600 mb-1">
+                    City
+                  </label>
+                  <input
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Chennai"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="state" className="block text-xs font-medium text-slate-600 mb-1">
+                    State
+                  </label>
+                  <select
+                    id="state"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none appearance-none transition"
+                  >
+                    <option value="Tamil Nadu">Tamil Nadu</option>
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Kerala">Kerala</option>
+                    <option value="Andhra Pradesh">Andhra Pradesh</option>
+                    <option value="Telangana">Telangana</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Pincode */}
+              <div>
+                <label htmlFor="pincode" className="block text-xs font-medium text-slate-600 mb-1">
+                  ZIP / Pincode
+                </label>
+                <input
+                  id="pincode"
+                  name="pincode"
+                  value={formData.pincode}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="600001"
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+
+              {/* Payment Banner */}
+              <div className="flex items-start gap-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                <div className="p-2 bg-indigo-600 rounded-lg text-white">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800">Secure Payment</p>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Payment processed via encrypted gateway. No card data stored.
+                  </p>
+                </div>
+              </div>
+            </form>
           </div>
 
-          {/* Summary */}
-          <div className="lg:pl-8">
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 sticky top-24">
-              <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-              <div className="space-y-4 max-h-60 overflow-y-auto mb-4 no-scrollbar">
-                {cart.map(item => (
-                  <div key={item.id} className="flex gap-4 items-center">
-                    <img src={item.image} alt="" className="w-12 h-12 rounded bg-slate-50 object-cover" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{item.name}</p>
-                      <p className="text-xs text-slate-500">Qty: {item.quantity}</p>
-                    </div>
-                    <p className="text-sm font-medium">${item.price * item.quantity}</p>
+          {/* ===== ORDER SUMMARY ===== */}
+          {/* ===== ORDER SUMMARY ===== */}
+          <div className="w-full lg:w-96 flex-shrink-0">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-28">
+              <h2 className="text-lg font-semibold text-slate-800 mb-4">Order Summary</h2>
+
+              <div className="max-h-60 overflow-y-auto space-y-3 mb-5">
+                {cart.map((item) => (
+                  <div key={item.id} className="flex justify-between text-sm">
+                    <span className="text-slate-600">
+                      {item.name} × {item.quantity}
+                    </span>
+                    <span className="font-medium">{formatINR(item.price * item.quantity)}</span>
                   </div>
                 ))}
               </div>
-              
-              <div className="border-t border-slate-100 pt-4 space-y-2">
-                <div className="flex justify-between text-slate-600">
-                  <span>Subtotal</span>
-                  <span>${subtotal}</span>
+
+              {/* ===== TAX & TOTAL ===== */}
+              <div className="space-y-2.5 text-sm border-t border-slate-200 pt-4">
+
+                {/* Subtotal */}
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Subtotal</span>
+                  <span className="font-medium">{formatINR(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Shipping</span>
-                  <span>${shipping}</span>
+
+                {/* Tax Breakdown */}
+                {isTamilNadu ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">
+                        CGST ({((cgst / subtotal) * 100).toFixed(1)}%)
+                      </span>
+                      <span>{formatINR(cgst)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">
+                        SGST ({((sgst / subtotal) * 100).toFixed(1)}%)
+                      </span>
+                      <span>{formatINR(sgst)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">
+                      IGST ({((igst / subtotal) * 100).toFixed(1)}%)
+                    </span>
+                    <span>{formatINR(igst)}</span>
+                  </div>
+                )}
+
+                {/* Shipping */}
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Shipping</span>
+                  <span>{formatINR(shipping)}</span>
                 </div>
-                <div className="flex justify-between text-lg font-bold text-slate-900 pt-2">
+
+                {/* Total */}
+                <div className="flex justify-between text-lg font-bold text-slate-900 pt-2 border-t border-slate-200 mt-2">
                   <span>Total</span>
-                  <span>${total}</span>
+                  <span>{formatINR(total)}</span>
                 </div>
               </div>
 
-              <button 
-                type="submit" 
+              {/* Place Order Button */}
+              <button
+                type="submit"
                 form="checkout-form"
                 disabled={loading}
-                className="w-full mt-6 py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-indigo-600 transition-all flex items-center justify-center gap-2"
+                className="w-full mt-6 py-3.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {loading ? 'Processing...' : 'Place Order'}
+                {loading ? "Processing..." : "Place Order"}
               </button>
             </div>
           </div>

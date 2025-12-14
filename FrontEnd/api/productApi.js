@@ -21,35 +21,6 @@ async function request(query, variables = {}) {
 // ========================
 // GET ALL PRODUCTS
 // ========================
-export const fetchProducts = async (limit = 20, skip = 0) => {
-  const query = `
-    query ($limit: Int, $skip: Int) {
-      products(limit: $limit, skip: $skip) {
-        _id
-        gtin
-        sku
-        originalWebpageUrl
-        processedWebpageUrl
-        mainImageUrls
-        localeCode
-        originalTitle
-        shortDescription
-        longDescription
-        stockAvailabilityInformation
-        priceInformation
-        contextualInformation
-        merchantProductOfferId
-        merchantId
-        normalizedCategoryPath
-        popularityInformation
-        createdAt
-        updatedAt
-      }
-    }
-  `;
-
-  return request(query, { limit, skip });
-};
 
 export const fetchShopProducts = async (limit = 20, skip = 0) => {
   const query = `
@@ -61,11 +32,83 @@ export const fetchShopProducts = async (limit = 20, skip = 0) => {
         image
         brand
         category
+        size
+
+          tax 
+
+         rate
+
+        gtin
+        sku
+        
+
+        originalWebpageUrl
+        processedWebpageUrl
+        mainImageUrls
+
+        localeCode
+        shortDescription
+        longDescription
+
+        stockAvailabilityInformation
+        priceInformation
+        contextualInformation
+
+        merchantProductOfferId
+        merchantId
+
+        popularityInformation
       }
     }
   `;
 
   return request(query, { limit, skip });
+};
+
+export const fetchBrandProductsShop = async (brand, limit = 20, skip = 0) => {
+  const query = `
+    query ($brand: String!, $limit: Int, $skip: Int) {
+      BrandProductsShop(
+        brand: $brand
+        limit: $limit
+        skip: $skip
+      ) {
+        id
+        name
+        price
+        image
+        brand
+        bestseller
+        category
+        size
+        rate
+
+          tax 
+
+        gtin
+        sku
+
+        originalWebpageUrl
+        processedWebpageUrl
+        mainImageUrls
+
+        localeCode
+        shortDescription
+        longDescription
+
+        stockAvailabilityInformation
+        priceInformation
+        contextualInformation
+
+        merchantProductOfferId
+        merchantId
+
+        popularityInformation
+      }
+    }
+  `;
+
+  return request(query, { brand, limit, skip });
 };
 
 export const fetchShopMeta = async () => {
@@ -85,39 +128,46 @@ export const fetchShopMeta = async () => {
 // ========================
 // GET PRODUCT BY _id
 // ========================
-export const fetchProductById = async (id) => {
+export const fetchShopProductById = async (id) => {
   const query = `
     query ($id: ID!) {
       product(id: $id) {
-        _id
-        productId
+        id
         name
-        brand
-        description
         price
-        url
-      }
-    }
-  `;
-  return request(query, { id });
-};
+        image
+        brand
+        bestseller
+        rate
+        category
+        size
 
-// ========================
-// GET PRODUCT BY productId
-// ========================
-export const fetchProductByProductId = async (productId) => {
-  const query = `
-    query ($productId: Int!) {
-      productByProductId(productId: $productId) {
-        _id
-        name
-        brand
-        price
-        description
+          tax
+
+        gtin
+        sku
+
+        originalWebpageUrl
+        processedWebpageUrl
+        mainImageUrls
+
+        localeCode
+        shortDescription
+        longDescription
+
+        stockAvailabilityInformation
+        priceInformation
+        contextualInformation
+
+        merchantProductOfferId
+        merchantId
+
+        popularityInformation
       }
     }
   `;
-  return request(query, { productId });
+
+  return request(query, { id });
 };
 
 // ========================

@@ -9,9 +9,10 @@ import {
   deleteProduct,
   getProductsShop,
   getShopMeta,
+  getBrandProductsShop,
 } from "../controllers/ProductController.js";
 
-import { JSONResolver } from "graphql-scalars"; 
+import { JSONResolver } from "graphql-scalars";
 
 export const productResolvers = {
   // 👇 Register JSON scalar so GraphQL can return objects safely
@@ -26,6 +27,8 @@ export const productResolvers = {
     shopProducts: (_, { filter, limit, skip }) => {
       return getProductsShop(limit, skip, filter);
     },
+    BrandProductsShop: (_, { brand, limit, skip, filter }) =>
+      getBrandProductsShop(brand, limit, skip, filter),
 
     shopMeta: () => getShopMeta(),
   },

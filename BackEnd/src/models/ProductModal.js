@@ -23,6 +23,11 @@ const ProductSchema = new mongoose.Schema(
 
     normalizedCategoryPath: String,
     popularityInformation: Object,
+    brand: String,
+
+    bestseller: Boolean,
+    rate: String,
+    tax : Number,
   },
   {
     timestamps: true,

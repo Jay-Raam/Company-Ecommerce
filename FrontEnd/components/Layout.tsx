@@ -44,10 +44,6 @@ export const Navbar: React.FC = () => {
 
           {/* Icons */}
           <div className="flex items-center space-x-6">
-            <button className="text-slate-500 hover:text-slate-900 transition-colors">
-              <Search className="w-5 h-5" />
-            </button>
-
             <Link to="/login" className="text-slate-500 hover:text-slate-900 transition-colors">
               <User className="w-5 h-5" />
             </Link>

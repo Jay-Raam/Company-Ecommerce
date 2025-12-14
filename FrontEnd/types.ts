@@ -1,4 +1,10 @@
 export interface Product {
+  tax: number;
+  rate: any;
+  stockAvailabilityInformation: any;
+  priceInformation: any;
+  size: any;
+  brand: string;
   id: string;
   name: string;
   price: number;
