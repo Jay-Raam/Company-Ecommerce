@@ -1,8 +1,8 @@
 import { createSchema } from "graphql-yoga";
-import { productTypeDefs } from "./schema.js";
-import { productResolvers } from "./resolvers.js";
+import { allTypeDefs } from "./schema-new.js";
+import { productResolvers } from "./resolvers-new.js";
 
 export const schema = createSchema({
-  typeDefs: [productTypeDefs],
-  resolvers: [productResolvers],
+  typeDefs: allTypeDefs,
+  resolvers: productResolvers,
 });

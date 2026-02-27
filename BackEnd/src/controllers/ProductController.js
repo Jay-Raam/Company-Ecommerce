@@ -1,4 +1,5 @@
 // controllers/ProductController.js
+import { getUSDtoINR } from "../../util/exchangeRate.js";
 import { Product } from "../models/ProductModal.js";
 
 export const getProducts = async (limit = 20, skip = 0) => {
@@ -8,7 +9,9 @@ export const getProducts = async (limit = 20, skip = 0) => {
 export const getProductsShop = async (limit = 20, skip = 0, filter = {}) => {
   console.log("Filter received in getProductsShop:", limit, skip, filter);
 
-  const USD_TO_INR = 90; // 🔁 today approx
+  const USD_TO_INR = await getUSDtoINR();
+
+  console.log("USD_TO_INR", USD_TO_INR); // today approx
 
   const raw = await Product.find(filter).limit(limit).skip(skip);
 
@@ -17,10 +20,10 @@ export const getProductsShop = async (limit = 20, skip = 0, filter = {}) => {
     return match ? match[1] : null;
   };
 
-  // ⭐ Size priority
+  // Size priority
   const SIZE_PRIORITY = ["M", "L", "S", "XL", "XS", "XXL"];
 
-  // ⭐ Group by base product
+  // Group by base product
   const groups = {};
 
   raw.forEach((p) => {
@@ -31,17 +34,17 @@ export const getProductsShop = async (limit = 20, skip = 0, filter = {}) => {
     groups[base].push({ doc: p, size });
   });
 
-  // ⭐ Pick best size per group
+  // Pick best size per group
   const selected = [];
 
   Object.values(groups).forEach((items) => {
     items.sort(
-      (a, b) => SIZE_PRIORITY.indexOf(a.size) - SIZE_PRIORITY.indexOf(b.size)
+      (a, b) => SIZE_PRIORITY.indexOf(a.size) - SIZE_PRIORITY.indexOf(b.size),
     );
     selected.push(items[0].doc);
   });
 
-  // ⭐ Map FULL product
+  // Map FULL product
   return selected.map((p) => {
     /* ---------- Images ---------- */
     let image = "";
@@ -65,12 +68,12 @@ export const getProductsShop = async (limit = 20, skip = 0, filter = {}) => {
     let popularityInformation = null;
     try {
       popularityInformation = JSON.parse(
-        p.popularityInformation?.replace(/'/g, '"')
+        p.popularityInformation?.replace(/'/g, '"'),
       );
     } catch {}
 
     return {
-      // 🔑 Core
+      // Core
       id: p._id,
       name: p.originalTitle,
       rate: p.rate,
@@ -82,30 +85,30 @@ export const getProductsShop = async (limit = 20, skip = 0, filter = {}) => {
 
       tax: p.tax ?? null,
 
-      // 🏷 Identifiers
+      // Identifiers
       gtin: p.gtin ?? null,
       sku: p.sku ?? null,
 
-      // 🌐 URLs
+      //  URLs
       originalWebpageUrl: p.originalWebpageUrl ?? null,
       processedWebpageUrl: p.processedWebpageUrl ?? null,
       mainImageUrls,
 
-      // 🌍 Locale & description
+      // Locale & description
       localeCode: p.localeCode ?? null,
       shortDescription: p.shortDescription ?? null,
       longDescription: p.longDescription ?? null,
 
-      // 📦 Stock & price metadata
+      // Stock & price metadata
       stockAvailabilityInformation: p.stockAvailabilityInformation ?? null,
       priceInformation,
 
-      // 🧠 Context & merchant
+      // Context & merchant
       contextualInformation: p.contextualInformation ?? null,
       merchantProductOfferId: p.merchantProductOfferId ?? null,
       merchantId: p.merchantId ?? null,
 
-      // ⭐ Popularity
+      // Popularity
       popularityInformation,
     };
   });
@@ -115,11 +118,13 @@ export const getBrandProductsShop = async (
   brand,
   limit = 20,
   skip = 0,
-  filter = {}
+  filter = {},
 ) => {
   console.log("getBrandProductsShop:", brand, limit, skip, filter);
 
-  const USD_TO_INR = 90;
+  const USD_TO_INR = await getUSDtoINR();
+
+  console.log("USD_TO_INR", USD_TO_INR);
 
   // Brand filter applied here
   const finalFilter = {
@@ -151,14 +156,12 @@ export const getBrandProductsShop = async (
 
   Object.values(groups).forEach((items) => {
     items.sort(
-      (a, b) => SIZE_PRIORITY.indexOf(a.size) - SIZE_PRIORITY.indexOf(b.size)
+      (a, b) => SIZE_PRIORITY.indexOf(a.size) - SIZE_PRIORITY.indexOf(b.size),
     );
     selected.push(items[0].doc);
   });
 
   return selected.map((p) => {
-    console.log("p", p);
-
     let image = "";
     let mainImageUrls = null;
 
@@ -179,7 +182,7 @@ export const getBrandProductsShop = async (
     let popularityInformation = null;
     try {
       popularityInformation = JSON.parse(
-        p.popularityInformation?.replace(/'/g, '"')
+        p.popularityInformation?.replace(/'/g, '"'),
       );
     } catch {}
 
@@ -221,36 +224,50 @@ export const getBrandProductsShop = async (
 };
 
 export const getProductById = async (id) => {
-  const USD_TO_INR = 90;
+  const USD_TO_INR = await getUSDtoINR();
+
+  console.log("USD_TO_INR", USD_TO_INR);
 
   const p = await Product.findById(id);
   if (!p) return null;
 
-  // 🖼 Image
-  let image = "";
-  let mainImageUrls = null;
-  try {
-    mainImageUrls = JSON.parse(p.mainImageUrls?.replace(/'/g, '"'));
-    image = mainImageUrls?.defaultSize ?? "";
-  } catch {}
+  // Helper
+  const safeParse = (value) => {
+    try {
+      if (!value) return null;
+      if (typeof value === "object") return value;
+      return JSON.parse(value.replace(/'/g, '"'));
+    } catch {
+      return null;
+    }
+  };
 
-  // 💰 Price
+  // ---------------- Parse Fields ----------------
+  const contextualInformation = safeParse(p.contextualInformation);
+  const stockAvailabilityInformation = safeParse(
+    p.stockAvailabilityInformation,
+  );
+  const priceInformation = safeParse(p.priceInformation);
+  const popularityInformation = safeParse(p.popularityInformation);
+  const mainImageUrls = safeParse(p.mainImageUrls);
+
+  // ---------------- Image ----------------
+  const image = mainImageUrls?.defaultSize ?? "";
+
+  // ---------------- Price ----------------
   let priceINR = null;
-  let priceInformation = null;
-  try {
-    priceInformation = JSON.parse(p.priceInformation?.replace(/'/g, '"'));
+
+  if (priceInformation?.displayPriceAmount?.valueInCents) {
     const priceUSD = priceInformation.displayPriceAmount.valueInCents / 100;
     priceINR = Math.round(priceUSD * USD_TO_INR);
-  } catch {}
+  }
 
-  // ⭐ Popularity
-  let popularityInformation = null;
-  try {
-    popularityInformation = JSON.parse(
-      p.popularityInformation?.replace(/'/g, '"')
-    );
-  } catch {}
+  // IMPORTANT: Never return NaN
+  if (isNaN(priceINR)) {
+    priceINR = null;
+  }
 
+  // ---------------- Return Clean Object ----------------
   return {
     id: p._id,
     name: p.originalTitle,
@@ -260,8 +277,6 @@ export const getProductById = async (id) => {
     bestseller: p.bestseller ?? false,
     rate: Number(p.rate) || 4,
     category: p.normalizedCategoryPath,
-    size: null,
-
     tax: p.tax ?? null,
 
     gtin: p.gtin ?? null,
@@ -269,25 +284,27 @@ export const getProductById = async (id) => {
 
     originalWebpageUrl: p.originalWebpageUrl ?? null,
     processedWebpageUrl: p.processedWebpageUrl ?? null,
-    mainImageUrls,
 
     localeCode: p.localeCode ?? null,
     shortDescription: p.shortDescription ?? null,
     longDescription: p.longDescription ?? null,
 
-    stockAvailabilityInformation: p.stockAvailabilityInformation ?? null,
+    // Now sending proper objects
+    contextualInformation,
+    stockAvailabilityInformation,
     priceInformation,
+    popularityInformation,
+    mainImageUrls,
 
-    contextualInformation: p.contextualInformation ?? null,
     merchantProductOfferId: p.merchantProductOfferId ?? null,
     merchantId: p.merchantId ?? null,
-
-    popularityInformation,
   };
 };
 
 export const getShopMeta = async () => {
-  const USD_TO_INR = 90; // 🔁 Today approx rate
+  const USD_TO_INR = await getUSDtoINR();
+
+  console.log("USD_TO_INR", USD_TO_INR); // 🔁 Today approx rate
 
   const raw = await Product.find({});
 

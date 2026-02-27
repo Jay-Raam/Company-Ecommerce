@@ -12,10 +12,10 @@ export const productTypeDefs = /* GraphQL */ `
     originalTitle: String
     shortDescription: String
     longDescription: String
-    stockAvailabilityInformation: String
-    priceInformation: String
-    contextualInformation: String
-    merchantProductOfferId: String
+    stockAvailabilityInformation: JSON
+    priceInformation: JSON
+    contextualInformation: JSON
+    merchantProductOfferId: JSON
     merchantId: String
     normalizedCategoryPath: String
     popularityInformation: JSON
@@ -33,9 +33,9 @@ export const productTypeDefs = /* GraphQL */ `
     originalTitle: String
     shortDescription: String
     longDescription: String
-    stockAvailabilityInformation: String
+    stockAvailabilityInformation: JSON
     priceInformation: String
-    contextualInformation: String
+    contextualInformation: JSON
     merchantProductOfferId: String
     merchantId: String
     normalizedCategoryPath: String
@@ -52,7 +52,7 @@ export const productTypeDefs = /* GraphQL */ `
     brand: String
     category: String
     size: String
-    tax : Float
+    tax: Float
 
     gtin: String
     sku: String
@@ -65,11 +65,11 @@ export const productTypeDefs = /* GraphQL */ `
     shortDescription: String
     longDescription: String
 
-    stockAvailabilityInformation: String
+    stockAvailabilityInformation: JSON
     priceInformation: JSON
     contextualInformation: JSON
 
-    merchantProductOfferId: String
+    merchantProductOfferId: JSON
     merchantId: String
 
     popularityInformation: JSON
@@ -98,9 +98,17 @@ export const productTypeDefs = /* GraphQL */ `
     shopMeta: ShopMeta
   }
 
+  type Newsletter {
+    id: ID!
+    email: String!
+    createdAt: String
+  }
+
   type Mutation {
     addProduct(product: ProductInput!): Product
     updateProduct(id: ID!, product: ProductInput!): Product
     deleteProduct(id: ID!): String
+
+    subscribeNewsletter(email: String!): String
   }
 `;
